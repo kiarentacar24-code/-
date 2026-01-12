@@ -1,0 +1,1160 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>롯데렌터카 재고 관리 시스템</title>
+  
+  <!-- SheetJS CDN for Excel parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  
+  <style>
+    :root{
+      --bg:#f6f7fb;
+      --panel:#ffffff;
+      --card:#ffffff;
+      --line:#e2e8f0;
+      --text:#0f172a;
+      --text-muted:#64748b;
+      --accent:#e60012;
+      --accent-light:#fff1f2;
+      --accent2:#2563eb;
+      --accent2-light:#dbeafe;
+      --success:#10b981;
+      --success-light:#d1fae5;
+      --shadow: 0 2px 8px rgba(15,23,42,.08);
+      --shadow-lg: 0 10px 24px rgba(15,23,42,.12);
+      --radius:12px;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    }
+    
+    *{box-sizing:border-box; margin:0; padding:0;}
+    
+    body{
+      background: linear-gradient(135deg, #f6f7fb 0%, #e9ecef 100%);
+      color:var(--text);
+      font-family:var(--font);
+      line-height:1.6;
+    }
+
+    .wrap{
+      max-width:1400px; 
+      margin:0 auto; 
+      padding:20px 16px 40px;
+    }
+
+    /* ===== HEADER ===== */
+    header{
+      position:sticky; 
+      top:0; 
+      z-index:100;
+      backdrop-filter: blur(12px);
+      background: rgba(255,255,255,.95);
+      border-bottom:2px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+    
+    .topbar{
+      display:flex; 
+      gap:16px; 
+      align-items:center; 
+      justify-content:space-between; 
+      padding:16px 20px; 
+      max-width:1400px; 
+      margin:0 auto;
+    }
+    
+    .brand{
+      display:flex; 
+      align-items:center; 
+      gap:16px;
+    }
+    
+    .logo-container{
+      width:160px; 
+      height:52px;
+      background: linear-gradient(135deg, #ffffff, #f8f9fa);
+      border-radius:12px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:8px 12px;
+      box-shadow: 0 2px 8px rgba(230,0,18,.1);
+      border:1px solid rgba(230,0,18,.12);
+    }
+    
+    .logoImg{
+      width:100%; 
+      height:100%; 
+      object-fit:contain;
+    }
+    
+    .title{
+      line-height:1.3;
+    }
+    
+    .title h1{
+      font-size:18px; 
+      font-weight:800; 
+      letter-spacing:-.3px;
+      color:var(--text);
+    }
+    
+    .title p{
+      margin:4px 0 0; 
+      font-size:13px; 
+      color:var(--text-muted);
+      font-weight:500;
+    }
+
+    .status-indicator{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 14px;
+      background:var(--accent-light);
+      border:1px solid var(--accent);
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+      color:var(--accent);
+    }
+    
+    .status-indicator.loading{
+      background:var(--accent2-light);
+      border-color:var(--accent2);
+      color:var(--accent2);
+    }
+    
+    .status-indicator.success{
+      background:var(--success-light);
+      border-color:var(--success);
+      color:var(--success);
+    }
+
+    /* ===== SEARCH & FILTERS ===== */
+    .search-section{
+      max-width:1400px;
+      margin:0 auto;
+      padding:16px 20px;
+      background:#fff;
+      border-bottom:1px solid var(--line);
+    }
+    
+    .search-input{
+      width:100%; 
+      border:2px solid var(--line); 
+      background:#fff; 
+      padding:14px 18px; 
+      border-radius:12px; 
+      font-size:15px; 
+      font-weight:500;
+      outline:none;
+      transition: all .2s;
+    }
+    
+    .search-input:focus{
+      border-color:var(--accent); 
+      box-shadow: 0 0 0 3px var(--accent-light);
+    }
+    
+    .search-input::placeholder{
+      color:var(--text-muted);
+    }
+
+    .filter-section{
+      max-width:1400px;
+      margin:0 auto;
+      padding:12px 20px;
+      background:#fff;
+      border-bottom:1px solid var(--line);
+    }
+    
+    .filter-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:10px;
+    }
+    
+    .filter-title{
+      font-size:13px;
+      font-weight:800;
+      color:var(--text-muted);
+      text-transform:uppercase;
+      letter-spacing:.5px;
+    }
+    
+    .toggle-btn{
+      border:1px solid var(--line);
+      background:#fff;
+      padding:6px 12px;
+      border-radius:8px;
+      cursor:pointer;
+      font-weight:700;
+      font-size:12px;
+      color:var(--text);
+      transition: all .2s;
+    }
+    
+    .toggle-btn:hover{
+      border-color:var(--accent);
+      color:var(--accent);
+    }
+
+    .chip-container{
+      display:flex; 
+      flex-wrap:wrap; 
+      gap:8px;
+    }
+
+    .chip{
+      border:2px solid var(--line);
+      background:#fff;
+      color:var(--text-muted);
+      padding:8px 16px;
+      border-radius:999px;
+      font-size:13px;
+      font-weight:700;
+      cursor:pointer;
+      user-select:none;
+      transition: all .2s;
+    }
+    
+    .chip:hover{
+      transform: translateY(-2px); 
+      border-color:var(--accent); 
+      color:var(--accent);
+      box-shadow: var(--shadow);
+    }
+    
+    .chip.active{
+      background:var(--accent); 
+      border-color:var(--accent); 
+      color:#fff;
+      box-shadow: 0 4px 12px rgba(230,0,18,.25);
+    }
+
+    /* ===== MAIN CONTENT ===== */
+    .section-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin:20px 0 12px;
+    }
+    
+    .section-header h2{
+      font-size:16px;
+      font-weight:800;
+      color:var(--text);
+      letter-spacing:-.3px;
+    }
+    
+    .meta-info{
+      color:var(--text-muted);
+      font-size:13px;
+      font-weight:600;
+    }
+
+    .list-wrapper{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .scroll-area{
+      max-height: calc(100vh - 340px);
+      overflow-y: auto;
+      padding-right:8px;
+    }
+    
+    .scroll-area::-webkit-scrollbar{
+      width:8px;
+    }
+    
+    .scroll-area::-webkit-scrollbar-track{
+      background:var(--bg);
+      border-radius:8px;
+    }
+    
+    .scroll-area::-webkit-scrollbar-thumb{
+      background:var(--line);
+      border-radius:8px;
+    }
+    
+    .scroll-area::-webkit-scrollbar-thumb:hover{
+      background:var(--text-muted);
+    }
+
+    .list-grid{
+      display:grid;
+      gap:12px;
+    }
+
+    /* ===== CARD (ROW) LAYOUT ===== */
+    .card{
+      background:#fff;
+      border:2px solid var(--line);
+      border-radius:14px;
+      padding:16px 18px;
+      transition: all .2s;
+      box-shadow: var(--shadow);
+    }
+    
+    .card:hover{
+      border-color:var(--accent);
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-2px);
+    }
+
+    .card-header{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:12px;
+    }
+
+    .card-main{
+      flex:1;
+      min-width:0;
+    }
+
+    .card-maker{
+      font-size:11px;
+      font-weight:700;
+      color:var(--text-muted);
+      text-transform:uppercase;
+      letter-spacing:.5px;
+      margin-bottom:4px;
+    }
+
+    .card-model{
+      font-size:17px;
+      font-weight:900;
+      color:var(--text);
+      letter-spacing:-.3px;
+      line-height:1.3;
+      word-break:keep-all;
+    }
+
+    .card-price{
+      text-align:right;
+      font-size:19px;
+      font-weight:900;
+      color:var(--accent);
+      white-space:nowrap;
+      font-variant-numeric:tabular-nums;
+    }
+
+    .card-body{
+      display:grid;
+      gap:10px;
+      margin-bottom:12px;
+    }
+
+    .info-row{
+      display:grid;
+      grid-template-columns:100px 1fr;
+      gap:12px;
+      align-items:flex-start;
+    }
+
+    .info-label{
+      font-size:12px;
+      font-weight:800;
+      color:var(--text-muted);
+      text-transform:uppercase;
+      letter-spacing:.3px;
+    }
+
+    .info-value{
+      font-size:13px;
+      font-weight:600;
+      color:var(--text);
+      word-break:break-word;
+    }
+
+    .color-chips{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+    }
+
+    .color-chip{
+      display:inline-flex;
+      align-items:center;
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:var(--bg);
+      font-size:11px;
+      font-weight:700;
+      color:var(--text);
+    }
+
+    .card-footer{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      gap:8px;
+      padding-top:12px;
+      border-top:1px solid var(--line);
+    }
+
+    .badge-group{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      padding:6px 12px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:800;
+      font-variant-numeric:tabular-nums;
+    }
+
+    .badge.success{
+      background:var(--success-light);
+      border:1px solid var(--success);
+      color:var(--success);
+    }
+
+    .badge.primary{
+      background:var(--accent2-light);
+      border:1px solid var(--accent2);
+      color:var(--accent2);
+    }
+
+    .badge.normal{
+      background:var(--accent-light);
+      border:1px solid var(--accent);
+      color:var(--accent);
+    }
+
+    .btn-copy{
+      border:2px solid var(--accent);
+      background:#fff;
+      color:var(--accent);
+      padding:8px 16px;
+      border-radius:10px;
+      font-weight:800;
+      font-size:12px;
+      cursor:pointer;
+      transition: all .2s;
+      white-space:nowrap;
+    }
+
+    .btn-copy:hover{
+      background:var(--accent);
+      color:#fff;
+      transform:translateY(-2px);
+      box-shadow: 0 4px 12px rgba(230,0,18,.3);
+    }
+
+    .empty-state{
+      padding:60px 20px;
+      text-align:center;
+      color:var(--text-muted);
+      border:2px dashed var(--line);
+      border-radius:14px;
+      background:var(--bg);
+    }
+
+    .empty-state-icon{
+      font-size:48px;
+      margin-bottom:12px;
+      opacity:.3;
+    }
+
+    .empty-state-text{
+      font-size:15px;
+      font-weight:600;
+    }
+
+    /* ===== TOAST ===== */
+    .toast{
+      position:fixed;
+      left:50%;
+      transform:translateX(-50%);
+      bottom:30px;
+      background:rgba(15,23,42,.95);
+      color:#fff;
+      padding:12px 20px;
+      border-radius:12px;
+      font-size:13px;
+      font-weight:700;
+      box-shadow: var(--shadow-lg);
+      display:none;
+      z-index:200;
+      backdrop-filter:blur(8px);
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px){
+      .topbar{
+        flex-direction:column;
+        align-items:flex-start;
+        gap:12px;
+      }
+      
+      .brand{
+        width:100%;
+        justify-content:space-between;
+      }
+      
+      .status-indicator{
+        font-size:11px;
+        padding:6px 10px;
+      }
+      
+      .info-row{
+        grid-template-columns:80px 1fr;
+      }
+      
+      .card-header{
+        flex-direction:column;
+      }
+      
+      .card-price{
+        text-align:left;
+        font-size:16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo-container">
+          <img class="logoImg" src="https://sspark.genspark.ai/cfimages?u1=rstie8J659kYe%2F3rw%2BRWdFw7pFwBtLCwVzPwcaVZ3L6c7k3MGQYbBrPiHbEx9CbpvFmNd%2FWdeTRpCqyid%2FNRceiaKL8ogK2tHUeY91BPXwOVStrAihTejnvl%2FxjBpNTQ%2FSS0MUTDxMLe&u2=JyaSnzY08g7HjH92&width=512" alt="롯데렌터카 로고" />
+        </div>
+        <div class="title">
+          <h1>롯데렌터카 재고 관리 시스템</h1>
+          <p>전략재고 · 현대 · 기아 통합 관리</p>
+        </div>
+      </div>
+      <div class="status-indicator loading" id="statusIndicator">
+        ⏳ 데이터 로딩중...
+      </div>
+    </div>
+
+    <div class="filter-section">
+      <div class="filter-header">
+        <div class="filter-title">제조사 필터</div>
+      </div>
+      <div class="chip-container" id="makerChips">
+        <div class="chip active" data-maker="ALL">전체</div>
+        <div class="chip" data-maker="LOTTE">롯데렌터카(전략재고)</div>
+        <div class="chip" data-maker="HYUNDAI">현대자동차</div>
+        <div class="chip" data-maker="KIA">기아</div>
+      </div>
+    </div>
+
+    <div class="search-section">
+      <input 
+        id="searchInput" 
+        class="search-input" 
+        placeholder="🔍 차종, 옵션, 색상으로 검색..." 
+        autocomplete="off" 
+      />
+    </div>
+
+    <div class="filter-section">
+      <div class="filter-header">
+        <div class="filter-title">차종 필터</div>
+        <button class="toggle-btn" id="toggleModels">접기</button>
+      </div>
+      <div class="chip-container" id="modelChips"></div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="section-header">
+      <h2>재고 리스트</h2>
+      <div class="meta-info" id="metaInfo">로딩중...</div>
+    </div>
+
+    <div class="list-wrapper">
+      <div class="scroll-area" id="scrollArea">
+        <div class="list-grid" id="listGrid"></div>
+        <div id="sentinel" style="height:20px"></div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px; padding:16px; background:var(--accent-light); border-radius:12px; border:1px solid var(--accent);">
+      <p style="font-size:13px; font-weight:600; color:var(--accent); line-height:1.6;">
+        💡 <strong>Tip:</strong> 텍스트복사 버튼을 클릭하면 차종, 옵션, 색상, 가격, 재고 정보를 한번에 복사할 수 있습니다.
+      </p>
+    </div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+// ===== 차종명 한글 매핑 테이블 =====
+const MODEL_NAME_MAP = {
+  // 현대
+  'AVANTE': '아반떼',
+  'SONATA': '쏘나타',
+  'GRANDEUR': '그랜저',
+  'SANTAFE': '싸타페',
+  'TUCSON': '투싼',
+  'PALISADE': '팰리세이드',
+  'KONA': '코나',
+  'VENUE': '베뉴',
+  'CASPER': '캐스퍼',
+  'STARIA': '스타리아',
+  
+  // 기아
+  'K3': 'K3',
+  'K5': 'K5',
+  'K8': 'K8',
+  'K9': 'K9',
+  'CARNIVAL': '카니발',
+  'SORENTO': '쏘렌토',
+  'SPORTAGE': '스포티지',
+  'SELTOS': '셀토스',
+  'NIRO': '니로',
+  'EV6': 'EV6',
+  'EV9': 'EV9',
+  'MOHAVE': '모하비',
+  'RAY': '레이',
+  
+  // 기타
+  'ACTYON': '액티언',
+  'BMW 5 SERIES': 'BMW 5시리즈',
+  'BMW X3': 'BMW X3',
+  'BMW X5': 'BMW X5'
+};
+
+// ===== 전역 상태 =====
+let allData = [];
+let filteredData = [];
+let renderedCount = 0;
+const PAGE_SIZE = 50;
+
+let currentMakerFilter = 'ALL';
+let currentModelFilter = 'ALL';
+let currentSearchQuery = '';
+
+const elListGrid = document.getElementById('listGrid');
+const elMetaInfo = document.getElementById('metaInfo');
+const elSearchInput = document.getElementById('searchInput');
+const elToast = document.getElementById('toast');
+const elMakerChips = document.getElementById('makerChips');
+const elModelChips = document.getElementById('modelChips');
+const elScrollArea = document.getElementById('scrollArea');
+const elStatusIndicator = document.getElementById('statusIndicator');
+const elToggleModels = document.getElementById('toggleModels');
+
+let modelsCollapsed = false;
+
+// ===== 유틸리티 함수 =====
+function showToast(msg){
+  elToast.textContent = msg;
+  elToast.style.display = 'block';
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => elToast.style.display = 'none', 2000);
+}
+
+function formatMoney(n){
+  if(n == null || n === '') return '-';
+  try{ return Number(n).toLocaleString('ko-KR') + '원'; }
+  catch{ return String(n); }
+}
+
+function safeText(v){
+  if(v == null || v === undefined) return '';
+  return String(v).trim();
+}
+
+function normalizeModelName(name){
+  let normalized = safeText(name).toUpperCase();
+  // 괄호 제거
+  normalized = normalized.replace(/\(.*?\)/g, '').trim();
+  return normalized;
+}
+
+function getModelDisplayName(name){
+  const normalized = normalizeModelName(name);
+  return MODEL_NAME_MAP[normalized] || name;
+}
+
+// ===== 엑셀 파싱 함수 =====
+/**
+ * 롯데 전략재고 엑셀 파싱
+ * 필수 컬럼: 차종, 옵션, 외장색상, 내장색상, 가격, 판매가능재고, 입고재고, 정상재고
+ */
+function parseLotteExcel(workbook){
+  const results = [];
+  const sheetName = workbook.SheetNames[0];
+  const sheet = workbook.Sheets[sheetName];
+  const data = XLSX.utils.sheet_to_json(sheet);
+  
+  for(const row of data){
+    // 파싱 포인트: 실제 엑셀 컬럼명에 맞춰 조정 필요
+    const model = row['차종'] || row['model'] || '';
+    if(!model) continue;
+    
+    results.push({
+      maker: '롯데렌터카(전략재고)',
+      makerKey: 'LOTTE',
+      model: model,
+      modelNorm: normalizeModelName(model),
+      modelDisplay: getModelDisplayName(model),
+      
+      trim: row['옵션'] || row['trim'] || '',
+      
+      exteriorColor: row['외장색상'] || row['exterior_color'] || '',
+      interiorColor: row['내장색상'] || row['interior_color'] || '',
+      
+      price: parseFloat(row['가격'] || row['price'] || 0),
+      
+      // 롯데만 표시: 판매가능/입고/정상
+      strategyNow: parseInt(row['판매가능재고'] || row['strategy_now'] || 0),
+      strategyLater: parseInt(row['입고재고'] || row['strategy_later'] || 0),
+      normalTotal: parseInt(row['정상재고'] || row['normal_total'] || 0),
+      
+      subsidy: parseFloat(row['전기차보조금'] || row['subsidy'] || 0),
+      
+      // 복사용 필드
+      salesCode: row['차종코드'] || '',
+      optionCode: row['옵션코드'] || '',
+      exteriorCode: row['외장코드'] || '',
+      interiorCode: row['내장코드'] || '',
+      location: row['출하장'] || ''
+    });
+  }
+  
+  return results;
+}
+
+/**
+ * 현대/기아 재고 엑셀 파싱
+ * 필수 컬럼: 차종명, 차종코드, 옵션코드, 옵션명, 외장색상코드, 외장색상명, 내장색상코드, 내장색상명, 출고지, 정상재고, 가격
+ */
+function parseCarMakerExcel(workbook, makerKey, makerName){
+  const results = [];
+  const sheetName = workbook.SheetNames[0];
+  const sheet = workbook.Sheets[sheetName];
+  const data = XLSX.utils.sheet_to_json(sheet);
+  
+  for(const row of data){
+    const model = row['차종명'] || row['model'] || row['차종'] || '';
+    if(!model) continue;
+    
+    const normalTotal = parseInt(row['정상재고'] || row['normal_total'] || row['재고'] || 0);
+    
+    results.push({
+      maker: makerName,
+      makerKey: makerKey,
+      model: model,
+      modelNorm: normalizeModelName(model),
+      modelDisplay: getModelDisplayName(model),
+      
+      trim: row['옵션명'] || row['trim_options'] || row['옵션'] || '',
+      
+      exteriorColor: row['외장색상명'] || row['color'] || row['외장색상'] || '',
+      interiorColor: row['내장색상명'] || row['interior_color'] || row['내장색상'] || '',
+      
+      price: parseFloat(row['가격'] || row['price'] || 0),
+      
+      // 현대/기아는 정상재고만
+      normalTotal: normalTotal,
+      
+      // 복사용 필드
+      salesCode: row['차종코드'] || row['sales_code'] || '',
+      optionCode: row['옵션코드'] || row['option_code'] || '',
+      exteriorCode: row['외장색상코드'] || row['color_code'] || '',
+      interiorCode: row['내장색상코드'] || row['interior_code'] || '',
+      location: row['출고지'] || row['location'] || row['출하장'] || ''
+    });
+  }
+  
+  return results;
+}
+
+// ===== 데이터 로드 함수 =====
+async function loadExcelFile(url){
+  try{
+    const response = await fetch(url);
+    if(!response.ok) throw new Error(`Failed to load ${url}`);
+    const arrayBuffer = await response.arrayBuffer();
+    return XLSX.read(arrayBuffer, {type: 'array'});
+  }catch(e){
+    console.error(`Error loading ${url}:`, e);
+    return null;
+  }
+}
+
+async function loadAllData(){
+  elStatusIndicator.textContent = '⏳ 데이터 로딩중...';
+  elStatusIndicator.className = 'status-indicator loading';
+  
+  const results = [];
+  
+  // 롯데 전략재고
+  const lotteWb = await loadExcelFile('./data/lotte.xlsx');
+  if(lotteWb){
+    results.push(...parseLotteExcel(lotteWb));
+  }
+  
+  // 현대 재고
+  const hyundaiWb = await loadExcelFile('./data/hyundai.xls');
+  if(hyundaiWb){
+    results.push(...parseCarMakerExcel(hyundaiWb, 'HYUNDAI', '현대자동차'));
+  }
+  
+  // 기아 재고
+  const kiaWb = await loadExcelFile('./data/kia.xls');
+  if(kiaWb){
+    results.push(...parseCarMakerExcel(kiaWb, 'KIA', '기아'));
+  }
+  
+  if(results.length === 0){
+    elStatusIndicator.textContent = '⚠️ 데이터 없음';
+    elStatusIndicator.className = 'status-indicator';
+    elListGrid.innerHTML = `<div class="empty-state">
+      <div class="empty-state-icon">📂</div>
+      <div class="empty-state-text">엑셀 파일을 data/ 폴더에 업로드해주세요</div>
+    </div>`;
+    return;
+  }
+  
+  // 정렬: 롯데 우선, 그 다음 차종명
+  results.sort((a, b) => {
+    if(a.makerKey === 'LOTTE' && b.makerKey !== 'LOTTE') return -1;
+    if(a.makerKey !== 'LOTTE' && b.makerKey === 'LOTTE') return 1;
+    return a.modelDisplay.localeCompare(b.modelDisplay, 'ko');
+  });
+  
+  allData = results;
+  buildModelChips();
+  applyFilters();
+  
+  elStatusIndicator.textContent = `✅ ${results.length.toLocaleString()}건 로드 완료`;
+  elStatusIndicator.className = 'status-indicator success';
+}
+
+// ===== 차종 필터 칩 생성 (중복 제거) =====
+function buildModelChips(){
+  const modelSet = new Set();
+  
+  for(const item of allData){
+    if(currentMakerFilter !== 'ALL' && item.makerKey !== currentMakerFilter) continue;
+    modelSet.add(item.modelDisplay);
+  }
+  
+  const models = Array.from(modelSet).sort((a, b) => a.localeCompare(b, 'ko'));
+  
+  elModelChips.innerHTML = '';
+  
+  const allChip = document.createElement('div');
+  allChip.className = 'chip' + (currentModelFilter === 'ALL' ? ' active' : '');
+  allChip.dataset.model = 'ALL';
+  allChip.textContent = '차종 전체';
+  elModelChips.appendChild(allChip);
+  
+  for(const model of models){
+    const chip = document.createElement('div');
+    chip.className = 'chip' + (currentModelFilter === model ? ' active' : '');
+    chip.dataset.model = model;
+    chip.textContent = model;
+    elModelChips.appendChild(chip);
+  }
+}
+
+// ===== 필터 적용 =====
+function applyFilters(){
+  const query = currentSearchQuery.toLowerCase();
+  
+  filteredData = allData.filter(item => {
+    // 제조사 필터
+    if(currentMakerFilter !== 'ALL' && item.makerKey !== currentMakerFilter) return false;
+    
+    // 차종 필터
+    if(currentModelFilter !== 'ALL' && item.modelDisplay !== currentModelFilter) return false;
+    
+    // 검색어 필터
+    if(query){
+      const searchText = [
+        item.modelDisplay,
+        item.trim,
+        item.exteriorColor,
+        item.interiorColor,
+        item.salesCode,
+        item.optionCode
+      ].join(' ').toLowerCase();
+      
+      if(!searchText.includes(query)) return false;
+    }
+    
+    return true;
+  });
+  
+  renderedCount = 0;
+  elListGrid.innerHTML = '';
+  renderMore(true);
+  
+  const total = filteredData.length;
+  elMetaInfo.textContent = `총 ${total.toLocaleString()}건 (현재 ${Math.min(total, renderedCount).toLocaleString()}건 표시)`;
+  
+  if(total === 0){
+    elListGrid.innerHTML = `<div class="empty-state">
+      <div class="empty-state-icon">🔍</div>
+      <div class="empty-state-text">조건에 맞는 재고가 없습니다</div>
+    </div>`;
+  }
+}
+
+// ===== 카드(행) 렌더링 =====
+function createCard(item, index){
+  const card = document.createElement('div');
+  card.className = 'card';
+  
+  // 헤더
+  const header = document.createElement('div');
+  header.className = 'card-header';
+  
+  const main = document.createElement('div');
+  main.className = 'card-main';
+  
+  const maker = document.createElement('div');
+  maker.className = 'card-maker';
+  maker.textContent = item.maker;
+  
+  const model = document.createElement('div');
+  model.className = 'card-model';
+  model.textContent = item.modelDisplay;
+  
+  main.appendChild(maker);
+  main.appendChild(model);
+  
+  const price = document.createElement('div');
+  price.className = 'card-price';
+  price.textContent = formatMoney(item.price);
+  
+  header.appendChild(main);
+  header.appendChild(price);
+  
+  // 바디
+  const body = document.createElement('div');
+  body.className = 'card-body';
+  
+  // 옵션
+  if(item.trim){
+    const trimRow = document.createElement('div');
+    trimRow.className = 'info-row';
+    trimRow.innerHTML = `
+      <div class="info-label">옵션</div>
+      <div class="info-value">${safeText(item.trim)}</div>
+    `;
+    body.appendChild(trimRow);
+  }
+  
+  // 외장색상
+  if(item.exteriorColor){
+    const extRow = document.createElement('div');
+    extRow.className = 'info-row';
+    extRow.innerHTML = `
+      <div class="info-label">외장색상</div>
+      <div class="info-value">${safeText(item.exteriorColor)}</div>
+    `;
+    body.appendChild(extRow);
+  }
+  
+  // 내장색상
+  if(item.interiorColor){
+    const intRow = document.createElement('div');
+    intRow.className = 'info-row';
+    intRow.innerHTML = `
+      <div class="info-label">내장색상</div>
+      <div class="info-value">${safeText(item.interiorColor)}</div>
+    `;
+    body.appendChild(intRow);
+  }
+  
+  // 보조금 (전기차)
+  if(item.subsidy && item.subsidy > 0){
+    const subsidyRow = document.createElement('div');
+    subsidyRow.className = 'info-row';
+    subsidyRow.innerHTML = `
+      <div class="info-label">보조금</div>
+      <div class="info-value">${formatMoney(item.subsidy)}</div>
+    `;
+    body.appendChild(subsidyRow);
+  }
+  
+  // 출하장/출고지
+  if(item.location){
+    const locRow = document.createElement('div');
+    locRow.className = 'info-row';
+    locRow.innerHTML = `
+      <div class="info-label">출하장</div>
+      <div class="info-value">${safeText(item.location)}</div>
+    `;
+    body.appendChild(locRow);
+  }
+  
+  // 푸터
+  const footer = document.createElement('div');
+  footer.className = 'card-footer';
+  
+  const badgeGroup = document.createElement('div');
+  badgeGroup.className = 'badge-group';
+  
+  // 재고 배지
+  if(item.makerKey === 'LOTTE'){
+    // 롯데: 판매가능/입고/정상
+    const nowBadge = document.createElement('span');
+    nowBadge.className = 'badge success';
+    nowBadge.textContent = `판매가능 ${item.strategyNow || 0}대`;
+    badgeGroup.appendChild(nowBadge);
+    
+    const laterBadge = document.createElement('span');
+    laterBadge.className = 'badge primary';
+    laterBadge.textContent = `입고 ${item.strategyLater || 0}대`;
+    badgeGroup.appendChild(laterBadge);
+    
+    const normalBadge = document.createElement('span');
+    normalBadge.className = 'badge normal';
+    normalBadge.textContent = `정상 ${item.normalTotal || 0}대`;
+    badgeGroup.appendChild(normalBadge);
+  }else{
+    // 현대/기아: 정상재고만
+    const normalBadge = document.createElement('span');
+    normalBadge.className = 'badge normal';
+    normalBadge.textContent = `정상재고 ${item.normalTotal || 0}대`;
+    badgeGroup.appendChild(normalBadge);
+  }
+  
+  footer.appendChild(badgeGroup);
+  
+  // 복사 버튼
+  const copyBtn = document.createElement('button');
+  copyBtn.className = 'btn-copy';
+  copyBtn.textContent = '📋 텍스트복사';
+  copyBtn.addEventListener('click', () => copyItemText(item));
+  
+  footer.appendChild(copyBtn);
+  
+  // 조립
+  card.appendChild(header);
+  card.appendChild(body);
+  card.appendChild(footer);
+  
+  return card;
+}
+
+function renderMore(fromTop = false){
+  if(fromTop) elScrollArea.scrollTop = 0;
+  
+  const total = filteredData.length;
+  const nextCount = Math.min(total, renderedCount + PAGE_SIZE);
+  
+  for(let i = renderedCount; i < nextCount; i++){
+    elListGrid.appendChild(createCard(filteredData[i], i));
+  }
+  
+  renderedCount = nextCount;
+  elMetaInfo.textContent = `총 ${total.toLocaleString()}건 (현재 ${renderedCount.toLocaleString()}건 표시)`;
+}
+
+// ===== 복사 기능 =====
+function copyItemText(item){
+  // 포맷 1: 카메이커, 차종코드, 옵션코드, 외장코드, 내장코드, 출하장
+  const format1 = [
+    item.maker,
+    item.salesCode,
+    item.optionCode,
+    item.exteriorCode,
+    item.interiorCode,
+    item.location
+  ].map(v => safeText(v) || '-').join(', ');
+  
+  // 포맷 2: 차종: [차종명] 옵션: [옵션명] 외장색상/내장색상: [색상]
+  const format2 = `차종: ${item.modelDisplay} | 옵션: ${item.trim || '-'} | 외장색상/내장색상: ${item.exteriorColor || '-'}/${item.interiorColor || '-'}`;
+  
+  // 결합
+  const text = `${format1}\n${format2}`;
+  
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('✅ 복사 완료!');
+  }).catch(err => {
+    // fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    showToast('✅ 복사 완료!');
+  });
+}
+
+// ===== 무한 스크롤 =====
+const io = new IntersectionObserver(entries => {
+  if(entries.some(e => e.isIntersecting)){
+    if(renderedCount < filteredData.length){
+      renderMore(false);
+    }
+  }
+}, {root: elScrollArea, threshold: 0.5});
+
+io.observe(document.getElementById('sentinel'));
+
+// ===== 이벤트 리스너 =====
+elMakerChips.addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if(!chip) return;
+  
+  currentMakerFilter = chip.dataset.maker;
+  
+  for(const c of elMakerChips.querySelectorAll('.chip')){
+    c.classList.toggle('active', c === chip);
+  }
+  
+  // 차종 필터 초기화
+  currentModelFilter = 'ALL';
+  buildModelChips();
+  applyFilters();
+});
+
+elModelChips.addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if(!chip) return;
+  
+  currentModelFilter = chip.dataset.model;
+  
+  for(const c of elModelChips.querySelectorAll('.chip')){
+    c.classList.toggle('active', c === chip);
+  }
+  
+  applyFilters();
+});
+
+elSearchInput.addEventListener('input', e => {
+  currentSearchQuery = e.target.value;
+  applyFilters();
+});
+
+elToggleModels.addEventListener('click', () => {
+  modelsCollapsed = !modelsCollapsed;
+  elModelChips.style.display = modelsCollapsed ? 'none' : 'flex';
+  elToggleModels.textContent = modelsCollapsed ? '펼치기' : '접기';
+});
+
+// ===== 초기화 =====
+loadAllData();
+</script>
+</body>
+</html>
